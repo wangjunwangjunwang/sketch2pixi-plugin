@@ -4,6 +4,11 @@
   "engines": {
     "sketch": ">=3.0"
   },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:wangjunwangjunwang/sketch2pixi-plugin.git"
+  },
+  "description": "switch layers of sketch to pixi.json",
   "skpm": {
     "name": "bztone-plugin",
     "manifest": "src/manifest.json",
