@@ -2,8 +2,6 @@
 // documentation: https://developer.sketchapp.com/reference/api/
 const fs = require('@skpm/fs')
 const util = require('./util')
-// const { toArray } = require('util')
-// var Dom = require('sketch/dom')
 const UI = require('sketch/ui')
 // pixi识别的所有类型的元素
 const types = [
@@ -59,50 +57,61 @@ export default function (content) {
   const doc = globalContent.document;
   const pages = doc.pages()
 
-  pages.forEach(page => {
-    let artboards = page.layers()
-    artboards.forEach(artboard => {
-      allArtboards.push(artboard)
-      // console.log('artboardID : ' + artboard.objectID())
-      // console.log('artboardName : ' + artboard.name())
-      let layers = artboard.layers()
-      layers.forEach(layer => allLayers.push(layer))
-    })
+  // log dir
+  let logDir = getHomeFolder(globalContent) + 'logs/'
+  fs.existsSync(logDir) || fs.mkdirSync(logDir)
+
+  if (pages.length === 0) {
+    UI.message('请选择一个page!')
+    return
+  }
+
+  const page = pages[0]
+  const pageName = page.name()
+
+  let artboards = page.layers()
+  artboards.forEach(artboard => {
+    allArtboards.push(artboard)
+    let layers = artboard.layers()
+    layers.forEach(layer => allLayers.push(layer))
   })
 
-  console.log('allLayers length : ' + allLayers.length)
-  console.log('allArtboards length : ' + allArtboards.length)
+  util.log(logDir,`allLayers length : ${allLayers.length}`)
+  util.log(logDir,`allArtboards length :  ${allArtboards.length}`)
 
-  pages.forEach((page, index) => {
-    // console.log('pageIndex : ' + (index + 1) + ', pageName : ' + page.name())
-    // page.layers().forEach(layer => {
-    //   artboards.unshift(layer)
-    // })
-    artboards = page.layers()
-    createLevel(artboards[0], json.main)
-    // 把输出结果写入json文件
-    let pixiFile = getScriptFolder(globalContent) + '/pixi.json'
-    fs.writeFileSync(pixiFile, JSON.stringify(json))
-    UI.message('转换完成!')
-  })
+  artboards = page.layers()
+  createLevel(artboards[0], json.main)
+  // 把输出结果写入json文件
+  let jsonsDir = getHomeFolder(globalContent) + 'jsons/'
+  fs.existsSync(jsonsDir) || fs.mkdirSync(jsonsDir)
+  let pixiFile = jsonsDir + `${pageName}.json`
+  
+  util.log(logDir, `jsonFileName : ${pageName}`)
+
+  fs.writeFileSync(pixiFile, JSON.stringify(json))
+  UI.message('转换完成!')
 }
 
-function getScriptFolder(content) {
+function getHomeFolder(content) {
   const parts = content.scriptPath.split('/')
   parts.pop()
-  return parts.join('/')
+  parts.shift()
+  let home = []
+  home.push(parts[0])
+  home.push(parts[1])
+  let homeDir = '/' + home.join('/') + '/sketch2pixi-plugin/'
+  fs.existsSync(homeDir) || fs.mkdirSync(homeDir) 
+  return homeDir
 }
 
 // 判断artboard是否有下一级
 function createLevel(artboard, current) {
-  console.log('artboard name : ' + artboard.name())
   UI.message('正在转换 : ' + artboard.name())
   let scale = current.scale
   let layers = artboard.layers()
   layers.forEach(layer => {
     let type = layer.class()
     let name = layer.name()
-    console.log('layer name : ' + name)
     let format = getImageFormat(layer)
     if (name == 'BG') {
       json.background = 'http://pixi.bztone.com/' + name + '.' + (format ? format : 'JPG')
@@ -112,13 +121,9 @@ function createLevel(artboard, current) {
           // 当前元素是热点区,指向下一级页面(artboard),
           // 找是否存在指向同一个artboard的元素,如果存在,那是子级页面的入口
           let targetId = layer.flow().destinationArtboardID()
-          // console.log('targetId : ' + targetId)
           let artboardLayer = getArtboard(targetId)
-          // console.log('artboardLayer')
-          console.log(artboardLayer)
           if (artboardLayer) {
             let sonLayer = getSonByHotspot(layers, targetId)
-            console.log(sonLayer)
             let son = {
               x: layer.frame().left(),
               y: layer.frame().top(),
@@ -127,7 +132,6 @@ function createLevel(artboard, current) {
               content: []
             }
             if (sonLayer) {
-              console.log('sonLayer : ' + sonLayer.name())
               let sonContent = {
                 x: (sonLayer.frame().left() - son.x) * son.scale,
                 y: (sonLayer.frame().top() - son.y) * son.scale,
@@ -147,8 +151,6 @@ function createLevel(artboard, current) {
           }
         }
       } else {
-        // let style = layer.style()
-        // console.log('type : ' + type)
         let frame = layer.frame()
         let content = {
           x: frame.left(),
@@ -172,30 +174,12 @@ function createLevel(artboard, current) {
   })
 }
 
-// find layer from allLayers
-function getLayerWithID(layerId) {
-  let layer = null
-  for (let i=0;i<allLayers.length;i++) {
-    let tempLayer = allLayers[i]
-    if (tempLayer.objectID() == layerId) {
-      layer = tempLayer
-      break
-    }
-  }
-  return layer
-}
-
 // 查询artboard
 function getArtboard(targetId) {
-  // const doc = globalContent.document;
-  // const pages = doc.pages()
   let data = null
   for (let i = 0; i < allArtboards.length; i++) {
     let artboard = allArtboards[i]
-    // console.log('artboard : ' + artboard.objectID())
-    // console.log(''+artboard.objectID() ==  ''+targetId)
-    if (''+artboard.objectID() ==  ''+targetId) {
-      // console.log('true')
+    if ('' + artboard.objectID() == '' + targetId) {
       data = artboard
       break
     }
@@ -211,7 +195,7 @@ function getSonByHotspot(layers, targetId) {
     let type = layer.class()
     if (type != MSHotspotLayer &&
       layer.flow() && layer.flow().destinationArtboardID()
-      && (''+layer.flow().destinationArtboardID()) == (''+targetId)) {
+      && ('' + layer.flow().destinationArtboardID()) == ('' + targetId)) {
       sonLayer = layer
       break
     }

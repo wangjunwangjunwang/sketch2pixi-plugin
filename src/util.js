@@ -1,3 +1,4 @@
+const fs = require('@skpm/fs')
 
 // 获取hex里面的alpha
 exports.getAlphaFromHex = (hex) => {
@@ -44,4 +45,17 @@ exports.rgb2hex = (red, green, blue, alpha) => {
 
 	let rgb = ((blue | green << 8 | red << 16) | 1 << 24).toString(16).slice(1) + alpha
 	return '0x' + rgb
+}
+
+// append log to path
+exports.log = (logDir, string) => {
+	let dateFormatter = NSDateFormatter.alloc().init()
+  dateFormatter.setDateFormat('YYYY-MM-dd')
+	console.log(dateFormatter)
+	let now = NSDate.alloc().init()
+	let logFile = logDir + dateFormatter.stringFromDate(now) + '.log'
+	dateFormatter.setDateFormat('YYYY-MM-dd hh:mm:ss')
+	let timestamp = dateFormatter.stringFromDate(now) + ' --- '
+	if (!fs.existsSync(logFile)) fs.writeFileSync(logFile, timestamp + string + '\n')
+	else fs.appendFileSync(logFile, timestamp + string + '\n')
 }
