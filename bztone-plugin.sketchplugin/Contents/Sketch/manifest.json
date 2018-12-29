@@ -15,9 +15,10 @@
       "my-command-identifier-switchAll"
     ]
   },
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "description": "switch layers of sketch to pixi.json",
   "name": "bztone-plugin",
   "identifier": "bztone-plugin",
   "disableCocoaScriptPreprocessor": true,
-  "appcast": "https://raw.githubusercontent.com//master/.appcast.xml"
+  "appcast": "https://raw.githubusercontent.com/wangjunwangjunwang/sketch2pixi-plugin/master/.appcast.xml"
 }
